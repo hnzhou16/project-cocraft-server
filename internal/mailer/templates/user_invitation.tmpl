@@ -1,0 +1,18 @@
+{{define "subject"}}Activate Your CoCraft Account{{end}}
+
+{{define "body"}}
+<!DOCTYPE html>
+<html>
+<head><meta name="viewport" content="width=device-width"></head>
+<body>
+  <p>Hi {{.Username}},</p>
+  <p>Welcome to CoCraft! Just one step left to activate your account.</p>
+  <p>Click to verify your email:<br>
+    <a href="{{.ActivationURL}}">{{.ActivationURL}}</a>
+  </p>
+  <p>Can't click? Copy the link directly.</p>
+  <p>Ignore this email if you didn't request this.</p>
+  <p>Thanks,<br>The CoCraft Team</p>
+</body>
+</html>
+{{end}}
