@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"github.com/go-chi/chi/v5"
 	"net/http"
@@ -76,8 +77,14 @@ func (app *application) postCtxtMiddleware(next http.Handler) http.Handler {
 
 		post, err := app.storage.Post.GetByID(ctx, postID)
 		if err != nil {
-			app.notFoundError(w, r, err)
-			return
+			switch {
+			case errors.Is(err, storage.ErrPostNotFound):
+				app.notFoundError(w, r, err)
+				return
+			default:
+				app.internalServerError(w, r, err)
+				return
+			}
 		}
 
 		ctx = context.WithValue(ctx, postCtx, post)

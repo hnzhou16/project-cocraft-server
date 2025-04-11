@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"github.com/go-chi/chi/v5"
 	"github.com/hnzhou16/project-social/internal/storage"
-	"log"
 	"net/http"
 	"regexp"
 )
@@ -127,17 +126,13 @@ func (app *application) getAllUserPostsHandler(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	log.Println(fmt.Printf("ID: %v\n\n", userID))
 	user, err := app.storage.User.GetByID(ctx, userID)
 	if err != nil {
 		app.notFoundError(w, r, err)
 		return
 	}
 
-	log.Println(user)
-
 	posts, err := app.storage.Post.GetByUserID(ctx, user.ID, pq)
-	log.Println(posts)
 	if err != nil {
 		app.internalServerError(w, r, err)
 		return
@@ -220,6 +215,19 @@ func (app *application) updatePostHandler(w http.ResponseWriter, r *http.Request
 	}
 
 	app.OutputJSON(w, http.StatusCreated, post)
+}
+
+func (app *application) toggleLikePostHandler(w http.ResponseWriter, r *http.Request) {
+	user := getUserFromCtx(r)
+	post := getPostFromCtx(r)
+
+	liked, err := app.storage.Post.ToggleLike(r.Context(), user.ID, post)
+	if err != nil {
+		app.internalServerError(w, r, err)
+		return
+	}
+
+	app.OutputJSON(w, http.StatusCreated, liked)
 }
 
 func (app *application) deletePostHandler(w http.ResponseWriter, r *http.Request) {

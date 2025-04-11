@@ -45,6 +45,8 @@ go get github.com/aws/aws-sdk-go-v2/service/s3
 # omitempty
 used for fields that are optional or auto-generated
 
+# bson
+all struct put/get info from mongoDB need to add `json...bson...`, so it can decode from db
 
 # go functions
 ## *(pointer), &(dereference)
@@ -61,12 +63,12 @@ if err := godotenv.Load(); err != nil {
 log.Println("")
 }
 
-## make(map[key_type]value_type)
+## make
 make -> initialize and allocate memory for slices, maps, and channels.
-(value is string)
-myMap := make(map[string]string)
-(value can be any type)
-    myMap := make(map[string]interface{}) 
+make(map[key_type]value_type)
+make([]int) -> append dynamically, least efficient
+make([]int,5) -> len, cap = 5, all values initialed to 0, assign via indices, append will be make len+1, cap*2
+make([]int, 0, 5) -> len=0, cap=5, pre-allocate memory to avoid reallocations, append, efficient
 
 ## fmt.ErrorF
 (return error with format/context)
@@ -91,6 +93,12 @@ context.WithTimeout(context.Background(), 10*time.Second) -> creates a new conte
 ## ...
 ellipsis (...) in a function parameter list indicates a variadic parameter, 
 meaning the function can accept zero or more values of the specified type.
+
+## bson
+"set" -> updates or creates a field with a specified value, replace if already exists 
+        (use it for array will erase the whole array)
+"addToSet" -> adds a value to an array only if it doesn’t already exist (ensures uniqueness)
+
 
 # Authentication vs Authorization
 Authentication -> verifies a user's identity/exists (who they are)
@@ -119,7 +127,6 @@ Not using role precedence in this project since no role inheritance nor multiple
 Frontend
  - save image at the presigned url then send post with image s3 keys to backend
 
-comment
 like a post
 AI images
 db

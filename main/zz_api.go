@@ -151,6 +151,9 @@ func (app *application) mount() *chi.Mux {
 				r.Delete("/", app.deletePostHandler)
 			})
 
+			// like
+			r.Patch("/like", app.toggleLikePostHandler)
+
 			// comment
 			r.Route("/comment", func(r chi.Router) {
 				r.Get("/", app.getCommentHandler)

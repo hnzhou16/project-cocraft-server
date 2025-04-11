@@ -1,16 +1,16 @@
 package main
 
 import (
+	"errors"
 	"fmt"
-	"github.com/go-chi/chi/v5"
 	"github.com/hnzhou16/project-social/internal/storage"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"net/http"
 )
 
 type CreateCommentPayload struct {
-	UserID  string `json:"user_id" validate:"required"`
-	Content string `json:"content" validate:"required,max=500"`
+	ParentID string `json:"parent_id,omitempty" validate:"omitempty,hexadecimal,len=24"`
+	Content  string `json:"content" validate:"required,max=500"`
 }
 
 func (app *application) createCommentHandler(w http.ResponseWriter, r *http.Request) {
@@ -24,24 +24,39 @@ func (app *application) createCommentHandler(w http.ResponseWriter, r *http.Requ
 
 	if err := Validate.Struct(payload); err != nil {
 		app.badRequestError(w, r, err)
-	}
-
-	userID, err := primitive.ObjectIDFromHex(payload.UserID)
-	if err != nil {
-		app.badRequestError(w, r, fmt.Errorf("invalid user ID"))
 		return
 	}
 
-	postID, err := primitive.ObjectIDFromHex(chi.URLParam(r, "postID"))
-	if err != nil {
-		app.badRequestError(w, r, fmt.Errorf("invalid post ID"))
-		return
-	}
+	user := getUserFromCtx(r)
+	post := getPostFromCtx(r)
 
 	comment := &storage.Comment{
-		UserID:  userID,
-		PostID:  postID,
+		UserID:  user.ID,
+		PostID:  post.ID,
 		Content: payload.Content,
+	}
+
+	// use "" to check empty string rather than nil
+	if payload.ParentID != "" {
+		objID, err := primitive.ObjectIDFromHex(payload.ParentID)
+		if err != nil {
+			app.badRequestError(w, r, fmt.Errorf("invalid parent ID"))
+			return
+		}
+
+		_, err = app.storage.Comment.Exists(ctx, objID)
+		if err != nil {
+			switch {
+			case errors.Is(err, storage.ErrCommentNotFound):
+				app.notFoundError(w, r, err)
+				return
+			default:
+				app.internalServerError(w, r, err)
+				return
+			}
+		}
+
+		comment.ParentID = &objID
 	}
 
 	if err := app.storage.Comment.Create(ctx, comment); err != nil {
@@ -53,24 +68,9 @@ func (app *application) createCommentHandler(w http.ResponseWriter, r *http.Requ
 }
 
 func (app *application) getCommentHandler(w http.ResponseWriter, r *http.Request) {
-	postID, err := primitive.ObjectIDFromHex(chi.URLParam(r, "postID"))
-	if err != nil {
-		app.badRequestError(w, r, fmt.Errorf("invalid post ID"))
-		return
-	}
+	post := getPostFromCtx(r)
 
-	exists, err := app.storage.Post.Exists(r.Context(), postID)
-	if err != nil {
-		app.internalServerError(w, r, err)
-		return
-	}
-
-	if !exists {
-		app.notFoundError(w, r, fmt.Errorf("post not found"))
-		return
-	}
-
-	comments, err := app.storage.Comment.GetByPostID(r.Context(), postID)
+	comments, err := app.storage.Comment.GetByPostID(r.Context(), post.ID)
 	if err != nil {
 		app.internalServerError(w, r, err)
 		return

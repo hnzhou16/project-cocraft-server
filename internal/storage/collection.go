@@ -30,18 +30,19 @@ type Collection struct {
 
 	Post interface {
 		Create(ctx context.Context, p *Post) error
-		Exists(context.Context, primitive.ObjectID) (bool, error)
-		GetFeed(ctx context.Context, user *User, pq PaginationQuery) ([]Post, error)
+		GetFeed(ctx context.Context, user *User, pq PaginationQuery) ([]PostWithLikeStatus, error)
 		GetByID(ctx context.Context, postID string) (*Post, error)
 		GetByUserID(ctx context.Context, userID primitive.ObjectID, pq PaginationQuery) ([]Post, error)
 		Update(ctx context.Context, post *Post) error
+		ToggleLike(ctx context.Context, userID primitive.ObjectID, post *Post) (bool, error)
 		IncrementCommentCount(ctx context.Context, postID primitive.ObjectID) error
 		Delete(ctx context.Context, postID string) error
 	}
 
 	Comment interface {
 		Create(ctx context.Context, c *Comment) error
-		GetByPostID(ctx context.Context, postID primitive.ObjectID) (*[]Comment, error)
+		Exists(context.Context, primitive.ObjectID) (bool, error)
+		GetByPostID(ctx context.Context, postID primitive.ObjectID) ([]CommentWithParentAndUser, error)
 	}
 
 	Review interface {
@@ -80,6 +81,7 @@ func NewMongoDBCollections(dbConn *db.DBConnection) Collection {
 	}
 	commentStorage := &CommentStorage{
 		collection:  commentCollection,
+		userStorage: &UserStorage{collection: userCollection},
 		postStorage: &PostStorage{collection: postCollection},
 	}
 	inviteStorage := &InviteStorage{
