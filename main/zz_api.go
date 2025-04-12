@@ -2,6 +2,7 @@ package main
 
 import (
 	"errors"
+	"github.com/hnzhou16/project-social/internal/ai"
 	"github.com/hnzhou16/project-social/internal/aws"
 	"github.com/hnzhou16/project-social/internal/security"
 	"go.uber.org/zap"
@@ -25,6 +26,7 @@ type application struct {
 	mailer        mailer.Client
 	authenticator auth.UserAuthenticator
 	awsPresigner  *aws.Presigner
+	aiImage       ai.Client
 }
 
 type config struct {
@@ -35,6 +37,7 @@ type config struct {
 	mailConfig mailConfig
 	authConfig authConfig
 	awsConfig  awsConfig
+	aiConfig   aiConfig
 }
 
 type dbConfig struct {
@@ -65,6 +68,13 @@ type awsConfig struct {
 	region          string
 	s3Bucket        string
 	exp             time.Duration
+}
+
+type aiConfig struct {
+	apiKey      string
+	apiUrl      string
+	imageNumber int
+	imageSize   string
 }
 
 func (app *application) mount() *chi.Mux {
@@ -112,6 +122,9 @@ func (app *application) mount() *chi.Mux {
 				r.Post("/follow", app.followUserHandler)
 				r.Delete("/follow", app.unfollowUserHandler)
 			})
+
+			// generate images
+			r.Post("/generate-image", app.generateImageHandler)
 
 			// upload images
 			r.With(app.RequirePermission(security.PermUser)).

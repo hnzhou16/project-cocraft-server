@@ -142,7 +142,7 @@ func (app *application) getAllUserPostsHandler(w http.ResponseWriter, r *http.Re
 	// need to use index-based iteration
 	if len(posts) > 0 {
 		for i := range posts {
-			if err := app.s3KeysToUrl(ctx, &posts[i]); err != nil {
+			if err := app.s3KeysToUrl(ctx, &posts[i].Post); err != nil {
 				app.internalServerError(w, r, err)
 				return
 			}

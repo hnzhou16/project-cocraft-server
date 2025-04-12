@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"github.com/hnzhou16/project-social/internal/ai"
 	"go.uber.org/zap"
 	"log"
 	"os"
@@ -55,6 +56,12 @@ func main() {
 			s3Bucket:        env.GetString("S3_BUCKET", ""),
 			exp:             time.Minute * 5,
 		},
+		aiConfig: aiConfig{
+			apiKey:      env.GetString("OPENAI_KEY", ""),
+			apiUrl:      env.GetString("API_URL", ""),
+			imageNumber: 1,
+			imageSize:   "1024x1024",
+		},
 	}
 
 	// initialize logger
@@ -91,6 +98,9 @@ func main() {
 		logger.Fatal("❌ failed to initialize AWS config: %v", err)
 	}
 
+	// Initialize OpenAI
+	openAIImage := ai.NewImageGenerator(cfg.aiConfig.apiKey, cfg.aiConfig.apiUrl, cfg.aiConfig.imageSize, cfg.aiConfig.imageNumber)
+
 	// Initialize app
 	app := &application{
 		config:        cfg,
@@ -99,6 +109,7 @@ func main() {
 		mailer:        mailerSendgrid,
 		authenticator: jwtAuthenticator,
 		awsPresigner:  awsPresigner,
+		aiImage:       openAIImage,
 	}
 
 	// Create the server

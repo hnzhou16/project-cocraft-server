@@ -32,7 +32,7 @@ type Collection struct {
 		Create(ctx context.Context, p *Post) error
 		GetFeed(ctx context.Context, user *User, pq PaginationQuery) ([]PostWithLikeStatus, error)
 		GetByID(ctx context.Context, postID string) (*Post, error)
-		GetByUserID(ctx context.Context, userID primitive.ObjectID, pq PaginationQuery) ([]Post, error)
+		GetByUserID(ctx context.Context, userID primitive.ObjectID, pq PaginationQuery) ([]PostWithLikeStatus, error)
 		Update(ctx context.Context, post *Post) error
 		ToggleLike(ctx context.Context, userID primitive.ObjectID, post *Post) (bool, error)
 		IncrementCommentCount(ctx context.Context, postID primitive.ObjectID) error

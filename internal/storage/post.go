@@ -147,7 +147,7 @@ func (p *PostStorage) GetByID(ctx context.Context, postID string) (*Post, error)
 	return &post, nil
 }
 
-func (p *PostStorage) GetByUserID(ctx context.Context, userID primitive.ObjectID, pq PaginationQuery) ([]Post, error) {
+func (p *PostStorage) GetByUserID(ctx context.Context, userID primitive.ObjectID, pq PaginationQuery) ([]PostWithLikeStatus, error) {
 	ctxTimeout, cancel := context.WithTimeout(ctx, QueryTimeout)
 	defer cancel()
 
@@ -175,7 +175,19 @@ func (p *PostStorage) GetByUserID(ctx context.Context, userID primitive.ObjectID
 		return nil, fmt.Errorf("failed to decode posts: %w", err)
 	}
 
-	return posts, nil
+	var result []PostWithLikeStatus
+	for _, post := range posts {
+		liked := false
+		for _, id := range post.LikeBy {
+			if userID == id {
+				liked = true
+				break
+			}
+		}
+		result = append(result, PostWithLikeStatus{Post: post, LikedByUser: liked})
+	}
+
+	return result, nil
 }
 
 func (p *PostStorage) Update(ctx context.Context, post *Post) error {

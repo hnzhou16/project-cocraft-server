@@ -127,16 +127,15 @@ Not using role precedence in this project since no role inheritance nor multiple
 Frontend
  - save image at the presigned url then send post with image s3 keys to backend
 
-like a post
-AI images
-db
 
+db
 autocomplete mentions
 mentions notification
 which field needs omitempty
 
 Feed first 10 posts are public
 Check upload/read images with aws works at frontend
+Test AI image generator from frontend, unlock api (google account)
 Following feature, frontend to check status first on profile page, then use the returned bool to set button status
 User activate front end url, need to set 'isSandbox' in mailer.go to false
 username have to be 'JD_Construction' at backend, remove '_' at frontend
