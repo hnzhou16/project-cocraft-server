@@ -123,7 +123,7 @@ Not using role precedence in this project since no role inheritance nor multiple
 
 
 
-# TODO
+# TODO 
 Frontend
  - save image at the presigned url then send post with image s3 keys to backend
 

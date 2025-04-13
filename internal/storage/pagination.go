@@ -1,12 +1,12 @@
 package storage
 
 import (
-	"go.mongodb.org/mongo-driver/bson/primitive"
 	"net/http"
 	"strconv"
 	"strings"
 
-	"github.com/hnzhou16/project-social/internal/security"
+	"github.com/hnzhou16/project-cocraft-server/internal/security"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type PaginationQuery struct {

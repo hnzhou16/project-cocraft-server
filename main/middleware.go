@@ -9,8 +9,8 @@ import (
 	"strings"
 
 	"github.com/golang-jwt/jwt/v5"
-	"github.com/hnzhou16/project-social/internal/security"
-	"github.com/hnzhou16/project-social/internal/storage"
+	"github.com/hnzhou16/project-cocraft-server/internal/security"
+	"github.com/hnzhou16/project-cocraft-server/internal/storage"
 )
 
 type ctxKey string

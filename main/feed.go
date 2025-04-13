@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"github.com/hnzhou16/project-social/internal/storage"
+	"github.com/hnzhou16/project-cocraft-server/internal/storage"
 	"net/http"
 )
 

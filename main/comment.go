@@ -3,7 +3,7 @@ package main
 import (
 	"errors"
 	"fmt"
-	"github.com/hnzhou16/project-social/internal/storage"
+	"github.com/hnzhou16/project-cocraft-server/internal/storage"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"net/http"
 )

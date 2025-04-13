@@ -11,9 +11,9 @@ import (
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
-	"github.com/hnzhou16/project-social/internal/mailer"
-	"github.com/hnzhou16/project-social/internal/security"
-	"github.com/hnzhou16/project-social/internal/storage"
+	"github.com/hnzhou16/project-cocraft-server/internal/mailer"
+	"github.com/hnzhou16/project-cocraft-server/internal/security"
+	"github.com/hnzhou16/project-cocraft-server/internal/storage"
 )
 
 type RegisterUserPayload struct {

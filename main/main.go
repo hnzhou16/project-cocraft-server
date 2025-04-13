@@ -2,7 +2,7 @@ package main
 
 import (
 	"context"
-	"github.com/hnzhou16/project-social/internal/ai"
+	"github.com/hnzhou16/project-cocraft-server/internal/ai"
 	"go.uber.org/zap"
 	"log"
 	"os"
@@ -10,12 +10,12 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/hnzhou16/project-social/internal/auth"
-	"github.com/hnzhou16/project-social/internal/aws"
-	"github.com/hnzhou16/project-social/internal/db"
-	"github.com/hnzhou16/project-social/internal/env"
-	"github.com/hnzhou16/project-social/internal/mailer"
-	"github.com/hnzhou16/project-social/internal/storage"
+	"github.com/hnzhou16/project-cocraft-server/internal/auth"
+	"github.com/hnzhou16/project-cocraft-server/internal/aws"
+	"github.com/hnzhou16/project-cocraft-server/internal/db"
+	"github.com/hnzhou16/project-cocraft-server/internal/env"
+	"github.com/hnzhou16/project-cocraft-server/internal/mailer"
+	"github.com/hnzhou16/project-cocraft-server/internal/storage"
 	"github.com/lpernett/godotenv"
 )
 

@@ -1,4 +1,4 @@
-module github.com/hnzhou16/project-social
+module github.com/hnzhou16/project-cocraft-server
 
 go 1.23.5
 

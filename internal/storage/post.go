@@ -4,13 +4,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/hnzhou16/project-social/internal/security"
-	"go.mongodb.org/mongo-driver/mongo/options"
 	"time"
 
+	"github.com/hnzhou16/project-cocraft-server/internal/security"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 var (
@@ -229,7 +229,7 @@ func (p *PostStorage) ToggleLike(ctx context.Context, userID primitive.ObjectID,
 		}
 	}
 
-	// "$.." make sure updating 'like_by' and 'like_count' is atomic
+	// "$xx" make sure updating 'like_by' and 'like_count' is atomic
 	var update = bson.M{}
 	if liked {
 		update = bson.M{

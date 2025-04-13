@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/hnzhou16/project-social/internal/security"
+	"github.com/hnzhou16/project-cocraft-server/internal/security"
 	"reflect"
 	"regexp"
 

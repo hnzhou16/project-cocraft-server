@@ -2,18 +2,18 @@ package main
 
 import (
 	"errors"
-	"github.com/hnzhou16/project-social/internal/ai"
-	"github.com/hnzhou16/project-social/internal/aws"
-	"github.com/hnzhou16/project-social/internal/security"
+	"github.com/hnzhou16/project-cocraft-server/internal/ai"
+	"github.com/hnzhou16/project-cocraft-server/internal/aws"
+	"github.com/hnzhou16/project-cocraft-server/internal/security"
 	"go.uber.org/zap"
 	"net/http"
 	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
-	"github.com/hnzhou16/project-social/internal/auth"
-	"github.com/hnzhou16/project-social/internal/mailer"
-	"github.com/hnzhou16/project-social/internal/storage"
+	"github.com/hnzhou16/project-cocraft-server/internal/auth"
+	"github.com/hnzhou16/project-cocraft-server/internal/mailer"
+	"github.com/hnzhou16/project-cocraft-server/internal/storage"
 )
 
 // zz_api.go is named to ensure it's compiled last.

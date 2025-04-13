@@ -3,7 +3,7 @@ package main
 import (
 	"errors"
 	"github.com/go-chi/chi/v5"
-	"github.com/hnzhou16/project-social/internal/storage"
+	"github.com/hnzhou16/project-cocraft-server/internal/storage"
 	"net/http"
 )
 
