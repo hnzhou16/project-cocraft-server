@@ -4,10 +4,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/go-chi/chi/v5"
 	"net/http"
-	"strings"
 
+	"github.com/go-chi/chi/v5"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/hnzhou16/project-cocraft-server/internal/security"
 	"github.com/hnzhou16/project-cocraft-server/internal/storage"
@@ -25,21 +24,15 @@ const (
 // authCtxMiddleware - validate token and add user to ctx
 func (app *application) authCtxMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// validate header
-		authHeader := r.Header.Get("Authorization")
-		if authHeader == "" {
-			app.unauthorizedError(w, r, fmt.Errorf("missing Authorization header"))
+		// Get token from cookie
+		cookie, err := r.Cookie("token")
+		if err != nil {
+			app.unauthorizedError(w, r, fmt.Errorf("missing token cookie"))
 			return
 		}
+		tokenString := cookie.Value
 
-		// extract token
-		parts := strings.Split(authHeader, " ")
-		if len(parts) != 2 || parts[0] != "Bearer" {
-			app.unauthorizedError(w, r, fmt.Errorf("invalid Authorization header"))
-			return
-		}
-
-		tokenString := parts[1]
+		// Validate JWT token
 		jwtToken, err := app.authenticator.VerifyToken(tokenString)
 		if err != nil {
 			app.unauthorizedError(w, r, err)

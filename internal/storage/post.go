@@ -35,8 +35,9 @@ type Post struct {
 }
 
 type PostWithLikeStatus struct {
-	Post        Post `json:"post"`
-	LikedByUser bool `json:"liked_by_user"`
+	Post        Post   `json:"post"`
+	Username    string `json:"username"`
+	LikedByUser bool   `json:"liked_by_user"`
 }
 
 type PostStorage struct {
@@ -72,7 +73,7 @@ func (p *PostStorage) GetFeed(ctx context.Context, user *User, pq PaginationQuer
 	}
 
 	if user != nil {
-		if len(pq.FolloweeIDs) > 0 {
+		if pq.ShowFollowing && len(pq.FolloweeIDs) > 0 {
 			filter["user_id"] = bson.M{"$in": pq.FolloweeIDs}
 		}
 
@@ -188,6 +189,18 @@ func (p *PostStorage) GetByUserID(ctx context.Context, userID primitive.ObjectID
 	}
 
 	return result, nil
+}
+
+func (p *PostStorage) GetCountByUserID(ctx context.Context, userID primitive.ObjectID) (int, error) {
+	ctxTimeout, cancel := context.WithTimeout(ctx, QueryTimeout)
+	defer cancel()
+
+	count, err := p.collection.CountDocuments(ctxTimeout, bson.M{"user_id": userID})
+	if err != nil {
+		return 0, fmt.Errorf("failed to count posts: %w", err)
+	}
+
+	return int(count), nil
 }
 
 func (p *PostStorage) Update(ctx context.Context, post *Post) error {

@@ -37,6 +37,7 @@ require (
 	github.com/klauspost/compress v1.16.7 // indirect
 	github.com/leodido/go-urn v1.4.0 // indirect
 	github.com/montanaflynn/stats v0.7.1 // indirect
+	github.com/rs/cors v1.11.1 // indirect
 	github.com/sendgrid/rest v2.6.9+incompatible // indirect
 	github.com/sendgrid/sendgrid-go v3.16.0+incompatible // indirect
 	github.com/xdg-go/pbkdf2 v1.0.0 // indirect

@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -10,17 +11,19 @@ import (
 )
 
 type PaginationQuery struct {
-	Limit         int                  `json:"limit" validate:"gte=1,lte=20"`
-	Offset        int                  `json:"offset" validate:"gte=0"`
-	Sort          string               `json:"sort" validate:"oneof=asc desc"`
-	ShowFollowing bool                 `json:"show_following"`
+	Limit         int                  `json:"limit,omitempty" validate:"gte=1,lte=20"`
+	Offset        int                  `json:"offset,omitempty" validate:"gte=0"`
+	Sort          string               `json:"sort,omitempty" validate:"oneof=asc desc"`
+	ShowFollowing bool                 `json:"show_following,omitempty"`
 	FolloweeIDs   []primitive.ObjectID `json:"followee_ids"`
-	ShowMentioned bool                 `json:"show_mentioned"`
-	Roles         []security.Role      `json:"roles" validate:"valid_roles_slice"`
+	ShowMentioned bool                 `json:"show_mentioned,omitempty"`
+	Roles         []security.Role      `json:"roles,omitempty" validate:"valid_roles_slice"`
 }
 
 func (pq *PaginationQuery) Parse(r *http.Request) error {
 	q := r.URL.Query()
+
+	log.Println(q)
 
 	if limit, err := strconv.Atoi(q.Get("limit")); err == nil && limit > 0 {
 		pq.Limit = limit
@@ -38,12 +41,14 @@ func (pq *PaginationQuery) Parse(r *http.Request) error {
 	pq.ShowFollowing = q.Get("following") == "true"
 	pq.ShowMentioned = q.Get("mentioned") == "true"
 
-	if rolesStr := q.Get("roles"); rolesStr != "" {
+	if rolesStr := q.Get("roles"); rolesStr != "" && rolesStr != "undefined" {
 		rolesStrSlice := strings.Split(rolesStr, ",")
 		for _, roleStr := range rolesStrSlice {
 			pq.Roles = append(pq.Roles, security.Role(roleStr))
 		}
 	}
+
+	log.Println(pq)
 
 	return nil
 }

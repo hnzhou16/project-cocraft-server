@@ -3,6 +3,7 @@ package storage
 import (
 	"context"
 	"errors"
+	"fmt"
 	"go.mongodb.org/mongo-driver/bson"
 	"time"
 
@@ -40,6 +41,30 @@ func (f *FollowStorage) GetFollowing(ctx context.Context, followerID primitive.O
 	}
 
 	return followeeIDs, cursor.Err()
+}
+
+func (f *FollowStorage) GetFollowerCount(ctx context.Context, followeeID primitive.ObjectID) (int, error) {
+	ctxTimeout, cancel := context.WithTimeout(ctx, QueryTimeout)
+	defer cancel()
+
+	followerCount, err := f.collection.CountDocuments(ctxTimeout, bson.M{"followee_id": followeeID})
+	if err != nil {
+		return 0, fmt.Errorf("failed to get following user count: %w", err)
+	}
+
+	return int(followerCount), nil
+}
+
+func (f *FollowStorage) GetFollowingCount(ctx context.Context, followerID primitive.ObjectID) (int, error) {
+	ctxTimeout, cancel := context.WithTimeout(ctx, QueryTimeout)
+	defer cancel()
+
+	followingCount, err := f.collection.CountDocuments(ctxTimeout, bson.M{"follower_id": followerID})
+	if err != nil {
+		return 0, fmt.Errorf("failed to get following user count: %w", err)
+	}
+
+	return int(followingCount), nil
 }
 
 func (f *FollowStorage) IsFollowing(ctx context.Context, followerID, followingID primitive.ObjectID) (bool, error) {

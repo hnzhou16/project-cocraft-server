@@ -60,17 +60,17 @@ func ValidateRoleSlice(fl validator.FieldLevel) bool {
 		return false
 	}
 
-	for i := 0; i < field.Len(); i++ {
-		elem := field.Index(i)
-
-		if elem.Kind() != reflect.String {
-			return false
-		}
-
-		if !security.IsValid(elem.String()) {
-			return false
-		}
-	}
+	// TODO: Roles validation
+	//
+	//for i := 0; i < field.Len(); i++ {
+	//	elem := field.Index(i)
+	//
+	//	// Convert the element to interface{} and assert it's a string-like value
+	//	role, ok := elem.Interface().(security.Role)
+	//	if !ok || !security.IsValid(string(role)) {
+	//		return false
+	//	}
+	//}
 
 	return true
 }

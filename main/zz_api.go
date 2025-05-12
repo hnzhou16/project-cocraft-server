@@ -5,6 +5,7 @@ import (
 	"github.com/hnzhou16/project-cocraft-server/internal/ai"
 	"github.com/hnzhou16/project-cocraft-server/internal/aws"
 	"github.com/hnzhou16/project-cocraft-server/internal/security"
+	"github.com/rs/cors"
 	"go.uber.org/zap"
 	"net/http"
 	"time"
@@ -81,6 +82,7 @@ func (app *application) mount() *chi.Mux {
 	// mux is returned in chi
 	r := chi.NewRouter()
 
+	// First apply CORS middleware
 	r.Use(middleware.RequestID)
 	r.Use(middleware.RealIP)
 	r.Use(middleware.Logger)
@@ -95,6 +97,11 @@ func (app *application) mount() *chi.Mux {
 	r.Route("/authentication", func(r chi.Router) {
 		r.Post("/user", app.registerUserHandler)
 		r.Post("/token", app.createTokenHandler)
+
+		r.Route("/validate", func(r chi.Router) {
+			r.Use(app.authCtxMiddleware)
+			r.Get("/", app.validateToken)
+		})
 	})
 
 	// user
@@ -108,27 +115,28 @@ func (app *application) mount() *chi.Mux {
 			r.Get("/", app.getAllUsersHandler)
 		})
 
-		r.Route("/{userID}", func(r chi.Router) {
+		r.Group(func(r chi.Router) {
 			r.Use(app.authCtxMiddleware)
 
-			r.Get("/", app.getUserHandler)
+			r.Get("/me", app.getUserHandler)
 
-			// follow/unfollow
-			r.Group(func(r chi.Router) {
-				r.Use(app.RequirePermission(security.PermUser))
-
-				r.Get("/following", app.getFollowingUserHandler)
-				r.Get("/follow-status", app.followStatusHandler)
-				r.Post("/follow", app.followUserHandler)
-				r.Delete("/follow", app.unfollowUserHandler)
-			})
-
-			// generate images
+			// generate AI images
 			r.Post("/generate-image", app.generateImageHandler)
 
 			// upload images
 			r.With(app.RequirePermission(security.PermUser)).
 				Post("/upload-image", app.generateUploadURLHandler)
+		})
+
+		r.Route("/{userID}", func(r chi.Router) {
+			r.Use(app.authCtxMiddleware)
+			r.Use(app.RequirePermission(security.PermUser))
+
+			// follow/unfollow
+			r.Get("/following", app.getFollowingUserHandler)
+			r.Get("/follow-status", app.followStatusHandler)
+			r.Post("/follow", app.followUserHandler)
+			r.Delete("/follow", app.unfollowUserHandler)
 		})
 	})
 
@@ -193,10 +201,24 @@ func (app *application) mount() *chi.Mux {
 }
 
 func (app *application) run(mux *chi.Mux) *http.Server {
+	// CORS configuration
+	// TODO: frontend origin to CORS
+	corsMiddleware := cors.New(cors.Options{
+		AllowedOrigins:   []string{"http://localhost:3000"},
+		AllowedMethods:   []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
+		AllowedHeaders:   []string{"Accept", "Content-Type", "Authorization"},
+		ExposedHeaders:   []string{"Content-Length", "Link"},
+		AllowCredentials: true,
+		MaxAge:           300,
+		Debug:            app.config.env == "development",
+	})
+
+	// Create middleware chain
+	handler := corsMiddleware.Handler(mux)
 
 	srv := &http.Server{
 		Addr:         app.config.addr,
-		Handler:      mux,
+		Handler:      handler,
 		WriteTimeout: 30 * time.Second,
 		ReadTimeout:  10 * time.Second,
 		IdleTimeout:  time.Minute,

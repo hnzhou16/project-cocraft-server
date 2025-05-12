@@ -21,6 +21,15 @@ func (app *application) getPublicFeedHandler(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
+	for i, post := range feed {
+		user, err := app.storage.User.GetByID(ctx, post.Post.UserID.Hex())
+		if err != nil {
+			app.internalServerError(w, r, fmt.Errorf("failed to fetch username for userID %s: %w", post.Post.UserID.Hex(), err))
+			return
+		}
+		feed[i].Username = user.Username
+	}
+
 	app.OutputJSON(w, http.StatusOK, feed)
 }
 
@@ -45,6 +54,11 @@ func (app *application) getFeedHandler(w http.ResponseWriter, r *http.Request) {
 			app.internalServerError(w, r, fmt.Errorf("failed to get following user: %w", err))
 			return
 		}
+
+		// ! if user not following anyone, should avoid passing into the query
+		if len(followeeIDs) == 0 {
+			app.OutputJSON(w, http.StatusOK, nil)
+		}
 		pq.FolloweeIDs = followeeIDs
 	}
 
@@ -57,6 +71,16 @@ func (app *application) getFeedHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		app.internalServerError(w, r, err)
 		return
+	}
+
+	// fetch username dynamically to the posts
+	for i, post := range feed {
+		user, err := app.storage.User.GetByID(ctx, post.Post.UserID.Hex())
+		if err != nil {
+			app.internalServerError(w, r, fmt.Errorf("failed to fetch username for userID %s: %w", post.Post.UserID.Hex(), err))
+			return
+		}
+		feed[i].Username = user.Username
 	}
 
 	app.OutputJSON(w, http.StatusOK, feed)

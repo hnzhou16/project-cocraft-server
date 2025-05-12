@@ -9,6 +9,13 @@ import (
 	"github.com/hnzhou16/project-cocraft-server/internal/storage"
 )
 
+type UserWithStats struct {
+	User           *storage.User `json:"user"`
+	PostCount      int           `json:"post_count"`
+	FollowerCount  int           `json:"follower_count"`
+	FollowingCount int           `json:"following_count"`
+}
+
 func (app *application) activateUserHandler(w http.ResponseWriter, r *http.Request) {
 	token := chi.URLParam(r, "token")
 
@@ -31,7 +38,18 @@ func (app *application) activateUserHandler(w http.ResponseWriter, r *http.Reque
 
 func (app *application) getUserHandler(w http.ResponseWriter, r *http.Request) {
 	user := getUserFromCtx(r)
-	app.OutputJSON(w, http.StatusOK, user)
+	postCount, _ := app.storage.Post.GetCountByUserID(r.Context(), user.ID)
+	followerCount, _ := app.storage.Follow.GetFollowerCount(r.Context(), user.ID)
+	followingCount, _ := app.storage.Follow.GetFollowingCount(r.Context(), user.ID)
+
+	resp := UserWithStats{
+		User:           user,
+		PostCount:      postCount,
+		FollowerCount:  followerCount,
+		FollowingCount: followingCount,
+	}
+
+	app.OutputJSON(w, http.StatusOK, resp)
 }
 
 func (app *application) getAllUsersHandler(w http.ResponseWriter, r *http.Request) {

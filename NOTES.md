@@ -12,6 +12,10 @@ go run ./cmd/api (run all .go file under api)
 (lightweight router)
 go get -u github.com/go-chi/chi/v5
 
+## CORs
+(enable frontend to call api)
+go get github.com/rs/cors
+
 ## air
 (hot reloading)
 go install github.com/air-verse/air@latest
@@ -49,7 +53,8 @@ used for fields that are optional or auto-generated
 all struct put/get info from mongoDB need to add `json...bson...`, so it can decode from db
 
 # go functions
-## *(pointer), &(dereference)
+## *(pointer), &(dereferenair
+ce)
 generally ok to pass in value or reference (pointer),
 but pass in reference is more efficient by saving memory - no copy created
 

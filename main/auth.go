@@ -164,3 +164,7 @@ func (app *application) createTokenHandler(w http.ResponseWriter, r *http.Reques
 
 	app.OutputJSON(w, http.StatusCreated, token)
 }
+
+func (app *application) validateToken(w http.ResponseWriter, r *http.Request) {
+	app.OutputJSON(w, http.StatusOK, nil)
+}
