@@ -31,6 +31,7 @@ type Collection struct {
 	Post interface {
 		Create(ctx context.Context, p *Post) error
 		GetFeed(ctx context.Context, user *User, pq PaginationQuery) ([]PostWithLikeStatus, error)
+		GetTrending(ctx context.Context, user *User, pq PaginationQuery) ([]PostWithLikeStatus, error)
 		GetByID(ctx context.Context, postID string) (*Post, error)
 		GetByUserID(ctx context.Context, userID primitive.ObjectID, pq PaginationQuery) ([]PostWithLikeStatus, error)
 		GetCountByUserID(ctx context.Context, userID primitive.ObjectID) (int, error)
@@ -41,7 +42,7 @@ type Collection struct {
 	}
 
 	Comment interface {
-		Create(ctx context.Context, c *Comment) error
+		Create(ctx context.Context, c *Comment) (CommentWithParentAndUser, error)
 		Exists(context.Context, primitive.ObjectID) (bool, error)
 		GetByPostID(ctx context.Context, postID primitive.ObjectID) ([]CommentWithParentAndUser, error)
 	}

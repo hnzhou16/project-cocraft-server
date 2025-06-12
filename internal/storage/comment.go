@@ -37,6 +37,7 @@ type CommentWithParentAndUser struct {
 	ID            primitive.ObjectID `json:"id"`
 	UserID        primitive.ObjectID `json:"user_id"`
 	Username      string             `json:"username"`
+	PostID        primitive.ObjectID `json:"post_id"`
 	Content       string             `json:"content"`
 	CreatedAt     time.Time          `json:"created_at"`
 	ParentComment *ParentComment     `json:"parent_comment,omitempty"`
@@ -48,8 +49,10 @@ type CommentStorage struct {
 	postStorage *PostStorage
 }
 
-func (c *CommentStorage) Create(ctx context.Context, comment *Comment) error {
+func (c *CommentStorage) Create(ctx context.Context, comment *Comment) (CommentWithParentAndUser, error) {
 	client := c.collection.Database().Client()
+
+	var result CommentWithParentAndUser
 
 	txnFunc := func(sessCtx mongo.SessionContext) (interface{}, error) {
 		comment.ID = primitive.NewObjectID()
@@ -70,10 +73,34 @@ func (c *CommentStorage) Create(ctx context.Context, comment *Comment) error {
 			return nil, fmt.Errorf("failed to increment comment count: %w", err)
 		}
 
+		var user User
+		if err := c.userStorage.collection.FindOne(ctxTimeout, bson.M{"_id": comment.UserID}).Decode(&user); err != nil {
+			return nil, fmt.Errorf("failed to get user: %w", err)
+		}
+
+		result = CommentWithParentAndUser{
+			ID:        comment.ID,
+			UserID:    comment.UserID,
+			Username:  user.Username,
+			PostID:    comment.PostID,
+			Content:   comment.Content,
+			CreatedAt: comment.CreatedAt,
+		}
+
+		var parent ParentComment
+		if comment.ParentID != nil {
+			if err := c.collection.FindOne(ctxTimeout, bson.M{"_id": comment.ParentID}).Decode(&parent); err != nil {
+				return nil, fmt.Errorf("failed to get parent comment: %w", err)
+			}
+			result.ParentComment = &parent
+		}
+
 		return nil, nil
 	}
 
-	return withTransaction(ctx, client, txnFunc)
+	err := withTransaction(ctx, client, txnFunc)
+
+	return result, err
 }
 
 func (c *CommentStorage) Exists(ctx context.Context, commentID primitive.ObjectID) (bool, error) {
@@ -165,6 +192,7 @@ func (c *CommentStorage) GetByPostID(ctx context.Context, postID primitive.Objec
 			ID:        c.ID,
 			UserID:    c.UserID,
 			Username:  userMap[c.UserID],
+			PostID:    c.PostID,
 			Content:   c.Content,
 			CreatedAt: c.CreatedAt,
 		}

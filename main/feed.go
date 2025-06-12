@@ -85,3 +85,42 @@ func (app *application) getFeedHandler(w http.ResponseWriter, r *http.Request) {
 
 	app.OutputJSON(w, http.StatusOK, feed)
 }
+
+func (app *application) getTrendingHandler(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	user := getUserFromCtx(r)
+
+	pq := storage.PaginationQuery{
+		Limit:  10,
+		Offset: 0,
+		Sort:   "desc",
+	}
+
+	if err := pq.Parse(r); err != nil {
+		app.badRequestError(w, r, err)
+		return
+	}
+
+	if err := Validate.Struct(pq); err != nil {
+		app.badRequestError(w, r, err)
+		return
+	}
+
+	feed, err := app.storage.Post.GetTrending(ctx, user, pq)
+	if err != nil {
+		app.internalServerError(w, r, err)
+		return
+	}
+
+	// fetch username dynamically to the posts
+	for i, post := range feed {
+		user, err := app.storage.User.GetByID(ctx, post.Post.UserID.Hex())
+		if err != nil {
+			app.internalServerError(w, r, fmt.Errorf("failed to fetch username for userID %s: %w", post.Post.UserID.Hex(), err))
+			return
+		}
+		feed[i].Username = user.Username
+	}
+
+	app.OutputJSON(w, http.StatusOK, feed)
+}

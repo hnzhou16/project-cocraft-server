@@ -10,10 +10,10 @@ import (
 )
 
 type CreatePostPayload struct {
-	Title      string   `json:"title" validate:"required,max=150"`
-	Content    string   `json:"content" validate:"required,max=1500"`
-	Tags       []string `json:"tags" validate:"omitempty,dive,required"`
-	ImagesPath []string `json:"images_path" validate:"omitempty,dive,required"`
+	Title   string   `json:"title" validate:"required,max=150"`
+	Content string   `json:"content" validate:"required,max=1500"`
+	Tags    []string `json:"tags" validate:"omitempty,dive,required"`
+	Images  []string `json:"images" validate:"omitempty,dive,required"`
 }
 
 // UpdatePostPayload - all fields are pointers with nil as default, otherwise they'll be a 0("") as default
@@ -74,7 +74,7 @@ func (app *application) createPostHandler(w http.ResponseWriter, r *http.Request
 		Content:      payload.Content,
 		Tags:         payload.Tags,
 		Mentions:     mentions,
-		ImagesPath:   payload.ImagesPath,
+		Images:       payload.Images,
 		CommentCount: 0,
 		Version:      1,
 	}
@@ -89,8 +89,8 @@ func (app *application) createPostHandler(w http.ResponseWriter, r *http.Request
 
 // s3KeysToUrl - turn images saved as s3 object keys into url
 func (app *application) s3KeysToUrl(ctx context.Context, post *storage.Post) error {
-	urls := make([]string, len(post.ImagesPath))
-	for i, key := range post.ImagesPath {
+	urls := make([]string, len(post.Images))
+	for i, key := range post.Images {
 		url, err := app.awsPresigner.GetImageURL(
 			ctx,
 			key,
@@ -102,7 +102,7 @@ func (app *application) s3KeysToUrl(ctx context.Context, post *storage.Post) err
 		urls[i] = url
 	}
 
-	post.ImagesPath = urls
+	post.Images = urls
 	return nil
 }
 
@@ -204,7 +204,7 @@ func (app *application) updatePostHandler(w http.ResponseWriter, r *http.Request
 	}
 
 	if payload.ImagesPath != nil {
-		post.ImagesPath = *payload.ImagesPath
+		post.Images = *payload.ImagesPath
 	}
 
 	post.Version++

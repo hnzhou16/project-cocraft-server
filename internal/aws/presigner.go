@@ -100,3 +100,16 @@ func (p *Presigner) GenerateUploadURL(ctx context.Context, userID, ext string, e
 
 	return req, objectKey, nil
 }
+
+func (p *Presigner) DeleteImage(ctx context.Context, objectKey string) error {
+	_, err := p.S3Client.DeleteObject(ctx, &s3.DeleteObjectInput{
+		Bucket: aws.String(p.Bucket),
+		Key:    aws.String(objectKey),
+	})
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}

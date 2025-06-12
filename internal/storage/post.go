@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
 	"time"
 
 	"github.com/hnzhou16/project-cocraft-server/internal/security"
@@ -25,7 +26,7 @@ type Post struct {
 	Content      string               `json:"content" bson:"content"`
 	Tags         []string             `json:"tags,omitempty" bson:"tags,omitempty"`
 	Mentions     []string             `json:"mentions,omitempty" bson:"mentions,omitempty"`
-	ImagesPath   []string             `json:"images,omitempty" bson:"images,omitempty"`
+	Images       []string             `json:"images,omitempty" bson:"images,omitempty"`
 	LikeBy       []primitive.ObjectID `json:"-" bson:"like_by"`
 	LikeCount    int64                `json:"like_count" bson:"like_count"`
 	CommentCount int64                `json:"comment_count" bson:"comment_count"`
@@ -99,9 +100,62 @@ func (p *PostStorage) GetFeed(ctx context.Context, user *User, pq PaginationQuer
 	defer cursor.Close(ctx)
 
 	var posts []Post
+
 	if err := cursor.All(ctx, &posts); err != nil {
 		return nil, fmt.Errorf("failed to decode posts: %w", err)
 	}
+
+	var result []PostWithLikeStatus
+	if user == nil {
+		for _, post := range posts {
+			result = append(result, PostWithLikeStatus{Post: post, LikedByUser: false})
+		}
+		return result, nil
+	}
+
+	for _, post := range posts {
+		liked := false
+		for _, id := range post.LikeBy {
+			if user.ID == id {
+				liked = true
+				break
+			}
+		}
+		result = append(result, PostWithLikeStatus{Post: post, LikedByUser: liked})
+	}
+
+	return result, nil
+}
+
+func (p *PostStorage) GetTrending(ctx context.Context, user *User, pq PaginationQuery) ([]PostWithLikeStatus, error) {
+	pipeline := mongo.Pipeline{
+		{{Key: "$match", Value: bson.M{
+			"created_at": bson.M{"$gte": time.Now().Add(-48 * time.Hour)},
+		}}},
+		{{Key: "$addFields", Value: bson.M{
+			"engagement_score": bson.M{"$add": bson.A{"$like_count", "$comment_count"}},
+		}}},
+		{{Key: "$sort", Value: bson.D{
+			{Key: "engagement_score", Value: -1},
+			{Key: "created_at", Value: -1}, // tie-breaker
+		}}},
+		{{Key: "$skip", Value: pq.Offset}},
+		{{Key: "$limit", Value: pq.Limit}},
+	}
+
+	cursor, err := p.collection.Aggregate(ctx, pipeline)
+	if err != nil {
+		return nil, fmt.Errorf("failed to aggregate trending posts: %w", err)
+	}
+	defer cursor.Close(ctx)
+
+	var posts []Post
+
+	if err := cursor.All(ctx, &posts); err != nil {
+		return nil, fmt.Errorf("failed to decode posts: %w", err)
+	}
+
+	log.Println(posts)
 
 	var result []PostWithLikeStatus
 	if user == nil {
@@ -209,13 +263,13 @@ func (p *PostStorage) Update(ctx context.Context, post *Post) error {
 
 	update := bson.M{
 		"$set": bson.M{
-			"title":       post.Title,
-			"content":     post.Content,
-			"tags":        post.Tags,
-			"mentions":    post.Mentions,
-			"images_path": post.ImagesPath,
-			"version":     post.Version,
-			"updated_at":  now,
+			"title":      post.Title,
+			"content":    post.Content,
+			"tags":       post.Tags,
+			"mentions":   post.Mentions,
+			"images":     post.Images,
+			"version":    post.Version,
+			"updated_at": now,
 		},
 	}
 

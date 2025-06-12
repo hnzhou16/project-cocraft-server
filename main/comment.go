@@ -59,12 +59,13 @@ func (app *application) createCommentHandler(w http.ResponseWriter, r *http.Requ
 		comment.ParentID = &objID
 	}
 
-	if err := app.storage.Comment.Create(ctx, comment); err != nil {
+	commentWithData, err := app.storage.Comment.Create(ctx, comment)
+	if err != nil {
 		app.internalServerError(w, r, err)
 		return
 	}
 
-	app.OutputJSON(w, http.StatusCreated, comment)
+	app.OutputJSON(w, http.StatusCreated, commentWithData)
 }
 
 func (app *application) getCommentHandler(w http.ResponseWriter, r *http.Request) {
@@ -76,5 +77,14 @@ func (app *application) getCommentHandler(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	app.OutputJSON(w, http.StatusOK, comments)
+	// !!! can simply return post.CommentCount instead of fetching data again
+	commentsWithCount := struct {
+		Comments     []storage.CommentWithParentAndUser `json:"comments"`
+		CommentCount int64                              `json:"comment_count"`
+	}{
+		Comments:     comments,
+		CommentCount: post.CommentCount,
+	}
+
+	app.OutputJSON(w, http.StatusOK, commentsWithCount)
 }

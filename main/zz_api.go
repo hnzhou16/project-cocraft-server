@@ -111,21 +111,22 @@ func (app *application) mount() *chi.Mux {
 		r.Route("/admin", func(r chi.Router) {
 			r.Use(app.authCtxMiddleware)
 			r.Use(app.RequirePermission(security.PermAdmin))
-
 			r.Get("/", app.getAllUsersHandler)
 		})
 
 		r.Group(func(r chi.Router) {
 			r.Use(app.authCtxMiddleware)
-
 			r.Get("/me", app.getUserHandler)
 
 			// generate AI images
 			r.Post("/generate-image", app.generateImageHandler)
 
-			// upload images
-			r.With(app.RequirePermission(security.PermUser)).
-				Post("/upload-image", app.generateUploadURLHandler)
+			// upload and remove images on aws
+			r.Group(func(r chi.Router) {
+				r.Use(app.RequirePermission(security.PermUser))
+				r.Post("/upload-image", app.generateUploadURLHandler)
+				r.Delete("/delete-image", app.deleteImageHandler)
+			})
 		})
 
 		r.Route("/{userID}", func(r chi.Router) {
@@ -147,8 +148,8 @@ func (app *application) mount() *chi.Mux {
 		r.Group(func(r chi.Router) {
 			r.Use(app.authCtxMiddleware)
 			r.Use(app.RequirePermission(security.PermUser))
-
 			r.Get("/", app.getFeedHandler)
+			r.Get("/trending", app.getTrendingHandler)
 		})
 	})
 
@@ -162,12 +163,10 @@ func (app *application) mount() *chi.Mux {
 
 		r.Route("/{postID}", func(r chi.Router) {
 			r.Use(app.postCtxtMiddleware)
-
 			r.Get("/", app.getPostHandler)
 
 			r.Group(func(r chi.Router) {
 				r.Use(app.RequirePostOwnership)
-
 				r.Patch("/", app.updatePostHandler)
 				r.Delete("/", app.deletePostHandler)
 			})
@@ -178,7 +177,6 @@ func (app *application) mount() *chi.Mux {
 			// comment
 			r.Route("/comment", func(r chi.Router) {
 				r.Get("/", app.getCommentHandler)
-
 				r.With(app.RequirePermission(security.PermUser)).
 					Post("/", app.createCommentHandler)
 			})
@@ -189,12 +187,10 @@ func (app *application) mount() *chi.Mux {
 	r.Route("/review", func(r chi.Router) {
 		r.Use(app.authCtxMiddleware)
 		r.Use(app.RequirePermission(security.PermUser))
-
 		r.Post("/create-review", app.createReviewHandler)
 		r.Route("/{reviewID}", func(r chi.Router) {
 			r.Delete("/delete-review", app.deleteReviewHandler)
 		})
-
 	})
 
 	return r
