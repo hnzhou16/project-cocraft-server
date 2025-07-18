@@ -28,7 +28,7 @@ func ValidateEmail(fl validator.FieldLevel) bool {
 
 func ValidatePassword(fl validator.FieldLevel) bool {
 	password := fl.Field().String()
-	if len(password) < 9 {
+	if len(password) < 8 {
 		return false
 	}
 
@@ -60,17 +60,19 @@ func ValidateRoleSlice(fl validator.FieldLevel) bool {
 		return false
 	}
 
-	// TODO: Roles validation
-	//
-	//for i := 0; i < field.Len(); i++ {
-	//	elem := field.Index(i)
-	//
-	//	// Convert the element to interface{} and assert it's a string-like value
-	//	role, ok := elem.Interface().(security.Role)
-	//	if !ok || !security.IsValid(string(role)) {
-	//		return false
-	//	}
-	//}
+	for i := 0; i < field.Len(); i++ {
+		elem := field.Index(i)
+
+		// Convert the element to interface{} and assert it's a string-like value
+		role, ok := elem.Interface().(security.Role)
+		if !ok {
+			return false
+		}
+
+		if !security.ValidRole[role] {
+			return false
+		}
+	}
 
 	return true
 }
