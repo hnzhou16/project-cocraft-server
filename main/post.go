@@ -110,18 +110,17 @@ func (app *application) getAllUserPostsHandler(w http.ResponseWriter, r *http.Re
 	ctx := r.Context()
 	userID := chi.URLParam(r, "userID")
 
-	pq := storage.PaginationQuery{
-		Limit:  10,
-		Offset: 0,
-		Sort:   "desc",
+	cq := storage.CursorQuery{
+		Limit: 10,
+		Sort:  "desc",
 	}
 
-	if err := pq.Parse(r); err != nil {
+	if err := cq.Parse(r); err != nil {
 		app.badRequestError(w, r, err)
 		return
 	}
 
-	if err := Validate.Struct(pq); err != nil {
+	if err := Validate.Struct(cq); err != nil {
 		app.badRequestError(w, r, err)
 		return
 	}
@@ -132,7 +131,7 @@ func (app *application) getAllUserPostsHandler(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	posts, err := app.storage.Post.GetByUserID(ctx, user.ID, pq)
+	posts, err := app.storage.Post.GetByUserID(ctx, user.ID, cq)
 	if err != nil {
 		app.internalServerError(w, r, err)
 		return
@@ -142,14 +141,23 @@ func (app *application) getAllUserPostsHandler(w http.ResponseWriter, r *http.Re
 	// need to use index-based iteration
 	if len(posts) > 0 {
 		for i := range posts {
-			if err := app.s3KeysToUrl(ctx, &posts[i].Post); err != nil {
-				app.internalServerError(w, r, err)
-				return
-			}
+			posts[i].Username = user.Username
 		}
 	}
 
-	app.OutputJSON(w, http.StatusOK, posts)
+	// !!! return cursor only if len(posts) >= limit, avoiding infinite loop of infinite scrolling if here is just 1 post
+	var nextCursor *string
+	if len(posts) >= cq.Limit {
+		cursor := posts[len(posts)-1].Post.ID.Hex()
+		nextCursor = &cursor
+	}
+
+	response := feedResponse{
+		Posts:      posts,
+		NextCursor: nextCursor,
+	}
+
+	app.OutputJSON(w, http.StatusOK, response)
 }
 
 func (app *application) getPostHandler(w http.ResponseWriter, r *http.Request) {
@@ -234,7 +242,24 @@ func (app *application) deletePostHandler(w http.ResponseWriter, r *http.Request
 	postID := chi.URLParam(r, "postID")
 	ctx := r.Context()
 
-	err := app.storage.Post.Delete(ctx, postID)
+	// Get the post first to retrieve image keys for S3 deletion
+	post, err := app.storage.Post.GetByID(ctx, postID)
+	if err != nil {
+		app.notFoundError(w, r, err)
+		return
+	}
+
+	// Delete images from S3 if they exist
+	if len(post.Images) > 0 {
+		for _, imageKey := range post.Images {
+			if err := app.awsPresigner.DeleteImage(ctx, imageKey); err != nil {
+				app.internalServerError(w, r, err)
+			}
+		}
+	}
+
+	// Delete the post from database
+	err = app.storage.Post.Delete(ctx, postID)
 	if err != nil {
 		app.internalServerError(w, r, err)
 		return

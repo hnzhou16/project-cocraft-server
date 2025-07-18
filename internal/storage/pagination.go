@@ -1,7 +1,6 @@
 package storage
 
 import (
-	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -10,45 +9,46 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-type PaginationQuery struct {
+type CursorQuery struct {
 	Limit         int                  `json:"limit,omitempty" validate:"gte=1,lte=20"`
-	Offset        int                  `json:"offset,omitempty" validate:"gte=0"`
+	Cursor        string               `json:"cursor,omitempty"`
 	Sort          string               `json:"sort,omitempty" validate:"oneof=asc desc"`
 	ShowFollowing bool                 `json:"show_following,omitempty"`
 	FolloweeIDs   []primitive.ObjectID `json:"followee_ids"`
 	ShowMentioned bool                 `json:"show_mentioned,omitempty"`
 	Roles         []security.Role      `json:"roles,omitempty" validate:"valid_roles_slice"`
+	Search        string               `json:"search,omitempty"`
 }
 
-func (pq *PaginationQuery) Parse(r *http.Request) error {
+func (cq *CursorQuery) Parse(r *http.Request) error {
 	q := r.URL.Query()
 
-	log.Println(q)
-
 	if limit, err := strconv.Atoi(q.Get("limit")); err == nil && limit > 0 {
-		pq.Limit = limit
+		cq.Limit = limit
 	}
 
-	if offset, err := strconv.Atoi(q.Get("offset")); err == nil && offset > 0 {
-		pq.Offset = offset
+	if cursor := q.Get("cursor"); cursor != "" && cursor != "undefined" {
+		cq.Cursor = cursor
 	}
 
 	sort := q.Get("sort")
 	if sort == "asc" {
-		pq.Sort = sort
+		cq.Sort = sort
 	}
 
-	pq.ShowFollowing = q.Get("following") == "true"
-	pq.ShowMentioned = q.Get("mentioned") == "true"
+	cq.ShowFollowing = q.Get("following") == "true"
+	cq.ShowMentioned = q.Get("mentioned") == "true"
 
 	if rolesStr := q.Get("roles"); rolesStr != "" && rolesStr != "undefined" {
 		rolesStrSlice := strings.Split(rolesStr, ",")
 		for _, roleStr := range rolesStrSlice {
-			pq.Roles = append(pq.Roles, security.Role(roleStr))
+			cq.Roles = append(cq.Roles, security.Role(roleStr))
 		}
 	}
 
-	log.Println(pq)
+	if search := q.Get("search"); search != "" && search != "undefined" {
+		cq.Search = search
+	}
 
 	return nil
 }

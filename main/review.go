@@ -60,6 +60,30 @@ func (app *application) createReviewHandler(w http.ResponseWriter, r *http.Reque
 	app.OutputJSON(w, http.StatusCreated, review)
 }
 
+func (app *application) getUserReviewHandler(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	userID := chi.URLParam(r, "userID")
+
+	if userID == "" {
+		app.badRequestError(w, r, errors.New("userID is required"))
+		return
+	}
+
+	user, err := app.storage.User.GetByID(ctx, userID)
+	if err != nil {
+		app.notFoundError(w, r, err)
+		return
+	}
+
+	reviews, err := app.storage.Review.GetByRatedUserID(ctx, user.ID)
+	if err != nil {
+		app.internalServerError(w, r, err)
+		return
+	}
+
+	app.OutputJSON(w, http.StatusOK, reviews)
+}
+
 func (app *application) deleteReviewHandler(w http.ResponseWriter, r *http.Request) {
 	reviewID := chi.URLParam(r, "reviewID")
 
