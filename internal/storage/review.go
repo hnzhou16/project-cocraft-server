@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -58,6 +59,24 @@ func (r *ReviewStorage) Create(ctx context.Context, review *Review, ratedUser *U
 	}
 
 	return withTransaction(ctx, client, txnFunc)
+}
+
+func (r *ReviewStorage) GetByRatedUserID(ctx context.Context, userID primitive.ObjectID) ([]Review, error) {
+	filter := bson.M{"rated_user_id": userID}
+	opts := options.Find().SetSort(bson.M{"created_at": -1})
+
+	cursor, err := r.collection.Find(ctx, filter, opts)
+	if err != nil {
+		return nil, fmt.Errorf("failed to find review by rated_user_id: %w", err)
+	}
+	defer cursor.Close(ctx)
+
+	var reviews []Review
+	if err := cursor.All(ctx, &reviews); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal reviews: %w", err)
+	}
+
+	return reviews, nil
 }
 
 func (r *ReviewStorage) Delete(ctx context.Context, reviewID string, ratedUser *User) error {

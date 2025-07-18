@@ -5,7 +5,7 @@ import "embed"
 const (
 	FromName             = "CoCraft"
 	maxRetires           = 3
-	isSandbox            = true
+	isSandbox            = true // TODO: email sandbox
 	UserActivateTemplate = "user_invitation.tmpl"
 )
 

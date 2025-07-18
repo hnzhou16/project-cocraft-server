@@ -52,6 +52,30 @@ func (app *application) getUserHandler(w http.ResponseWriter, r *http.Request) {
 	app.OutputJSON(w, http.StatusOK, resp)
 }
 
+func (app *application) getUserProfileHandler(w http.ResponseWriter, r *http.Request) {
+	userID := chi.URLParam(r, "userID")
+	ctx := r.Context()
+
+	user, err := app.storage.User.GetByID(ctx, userID)
+	if err != nil {
+		app.unauthorizedError(w, r, err)
+		return
+	}
+
+	postCount, _ := app.storage.Post.GetCountByUserID(r.Context(), user.ID)
+	followerCount, _ := app.storage.Follow.GetFollowerCount(r.Context(), user.ID)
+	followingCount, _ := app.storage.Follow.GetFollowingCount(r.Context(), user.ID)
+
+	resp := UserWithStats{
+		User:           user,
+		PostCount:      postCount,
+		FollowerCount:  followerCount,
+		FollowingCount: followingCount,
+	}
+
+	app.OutputJSON(w, http.StatusOK, resp)
+}
+
 func (app *application) getAllUsersHandler(w http.ResponseWriter, r *http.Request) {
 	users, err := app.storage.User.GetAll(r.Context())
 	if err != nil {

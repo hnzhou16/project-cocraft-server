@@ -30,11 +30,12 @@ type Collection struct {
 
 	Post interface {
 		Create(ctx context.Context, p *Post) error
-		GetFeed(ctx context.Context, user *User, pq PaginationQuery) ([]PostWithLikeStatus, error)
-		GetTrending(ctx context.Context, user *User, pq PaginationQuery) ([]PostWithLikeStatus, error)
+		GetFeed(ctx context.Context, user *User, cq CursorQuery) ([]PostWithLikeStatus, error)
+		GetTrending(ctx context.Context, user *User, cq CursorQuery) ([]PostWithLikeStatus, error)
 		GetByID(ctx context.Context, postID string) (*Post, error)
-		GetByUserID(ctx context.Context, userID primitive.ObjectID, pq PaginationQuery) ([]PostWithLikeStatus, error)
+		GetByUserID(ctx context.Context, userID primitive.ObjectID, cq CursorQuery) ([]PostWithLikeStatus, error)
 		GetCountByUserID(ctx context.Context, userID primitive.ObjectID) (int, error)
+		Search(ctx context.Context, user *User, query string, cq CursorQuery) ([]PostWithLikeStatus, error)
 		Update(ctx context.Context, post *Post) error
 		ToggleLike(ctx context.Context, userID primitive.ObjectID, post *Post) (bool, error)
 		IncrementCommentCount(ctx context.Context, postID primitive.ObjectID) error
@@ -49,6 +50,7 @@ type Collection struct {
 
 	Review interface {
 		Create(ctx context.Context, review *Review, ratedUser *User) error
+		GetByRatedUserID(ctx context.Context, userID primitive.ObjectID) ([]Review, error)
 		Delete(ctx context.Context, reviewID string, ratedUser *User) error
 	}
 

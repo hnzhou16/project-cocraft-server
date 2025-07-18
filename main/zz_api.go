@@ -104,6 +104,14 @@ func (app *application) mount() *chi.Mux {
 		})
 	})
 
+	// AI routes
+	r.Route("/ai", func(r chi.Router) {
+		r.Use(app.authCtxMiddleware)
+		r.Use(app.RequirePermission(security.PermUser))
+		r.Post("/generate-image", app.generateImageHandler)
+		r.Post("/refine-image", app.refineImageHandler)
+	})
+
 	// user
 	r.Route("/user", func(r chi.Router) {
 		r.Put("/activate/{token}", app.activateUserHandler)
@@ -118,9 +126,6 @@ func (app *application) mount() *chi.Mux {
 			r.Use(app.authCtxMiddleware)
 			r.Get("/me", app.getUserHandler)
 
-			// generate AI images
-			r.Post("/generate-image", app.generateImageHandler)
-
 			// upload and remove images on aws
 			r.Group(func(r chi.Router) {
 				r.Use(app.RequirePermission(security.PermUser))
@@ -133,6 +138,8 @@ func (app *application) mount() *chi.Mux {
 			r.Use(app.authCtxMiddleware)
 			r.Use(app.RequirePermission(security.PermUser))
 
+			r.Get("/profile", app.getUserProfileHandler)
+			r.Get("/reviews", app.getUserReviewHandler)
 			// follow/unfollow
 			r.Get("/following", app.getFollowingUserHandler)
 			r.Get("/follow-status", app.followStatusHandler)
@@ -148,8 +155,9 @@ func (app *application) mount() *chi.Mux {
 		r.Group(func(r chi.Router) {
 			r.Use(app.authCtxMiddleware)
 			r.Use(app.RequirePermission(security.PermUser))
-			r.Get("/", app.getFeedHandler)
+			r.Get("/user", app.getFeedHandler)
 			r.Get("/trending", app.getTrendingHandler)
+			r.Get("/search", app.getSearchHandler)
 		})
 	})
 
@@ -200,7 +208,7 @@ func (app *application) run(mux *chi.Mux) *http.Server {
 	// CORS configuration
 	// TODO: frontend origin to CORS
 	corsMiddleware := cors.New(cors.Options{
-		AllowedOrigins:   []string{"http://localhost:3000"},
+		AllowedOrigins:   []string{"http://localhost:3000", "http://localhost:3001"},
 		AllowedMethods:   []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
 		AllowedHeaders:   []string{"Accept", "Content-Type", "Authorization"},
 		ExposedHeaders:   []string{"Content-Length", "Link"},

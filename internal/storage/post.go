@@ -65,33 +65,45 @@ func (p *PostStorage) Create(ctx context.Context, post *Post) error {
 	return nil
 }
 
-func (p *PostStorage) GetFeed(ctx context.Context, user *User, pq PaginationQuery) ([]PostWithLikeStatus, error) {
+func (p *PostStorage) GetFeed(ctx context.Context, user *User, cq CursorQuery) ([]PostWithLikeStatus, error) {
 	filter := bson.M{}
 
 	sort := -1
-	if pq.Sort == "asc" {
+	if cq.Sort == "asc" {
 		sort = 1
 	}
 
 	if user != nil {
-		if pq.ShowFollowing && len(pq.FolloweeIDs) > 0 {
-			filter["user_id"] = bson.M{"$in": pq.FolloweeIDs}
+		if cq.ShowFollowing && len(cq.FolloweeIDs) > 0 {
+			filter["user_id"] = bson.M{"$in": cq.FolloweeIDs}
 		}
 
-		if pq.ShowMentioned {
+		if cq.ShowMentioned {
 			// Check if the array contains the username
-			filter["mentions"] = user.Username // Direct equality check
+			filter["mentions"] = user.Username // !!! Direct equality check
 		}
+	}
 
-		if len(pq.Roles) > 0 {
-			filter["user_role"] = bson.M{"$in": pq.Roles}
+	if len(cq.Roles) > 0 {
+		filter["user_role"] = bson.M{"$in": cq.Roles}
+	}
+
+	// cursor query based on post id
+	if cq.Cursor != "" && cq.Cursor != "undefined" {
+		cursorID, err := primitive.ObjectIDFromHex(cq.Cursor)
+		if err != nil {
+			return nil, fmt.Errorf("invalid cursor ID: %w", err)
+		}
+		if sort == -1 {
+			filter["_id"] = bson.M{"$lt": cursorID}
+		} else {
+			filter["_id"] = bson.M{"$gt": cursorID}
 		}
 	}
 
 	opts := options.Find().
 		SetSort(bson.M{"created_at": sort}).
-		SetSkip(int64(pq.Offset)).
-		SetLimit(int64(pq.Limit))
+		SetLimit(int64(cq.Limit))
 
 	cursor, err := p.collection.Find(ctx, filter, opts)
 	if err != nil {
@@ -127,11 +139,12 @@ func (p *PostStorage) GetFeed(ctx context.Context, user *User, pq PaginationQuer
 	return result, nil
 }
 
-func (p *PostStorage) GetTrending(ctx context.Context, user *User, pq PaginationQuery) ([]PostWithLikeStatus, error) {
+func (p *PostStorage) GetTrending(ctx context.Context, user *User, cq CursorQuery) ([]PostWithLikeStatus, error) {
 	pipeline := mongo.Pipeline{
-		{{Key: "$match", Value: bson.M{
-			"created_at": bson.M{"$gte": time.Now().Add(-48 * time.Hour)},
-		}}},
+		// Optional: only show past 48hr posts
+		//{{Key: "$match", Value: bson.M{
+		//	"created_at": bson.M{"$gte": time.Now().Add(-48 * time.Hour)},
+		//}}},
 		{{Key: "$addFields", Value: bson.M{
 			"engagement_score": bson.M{"$add": bson.A{"$like_count", "$comment_count"}},
 		}}},
@@ -139,8 +152,7 @@ func (p *PostStorage) GetTrending(ctx context.Context, user *User, pq Pagination
 			{Key: "engagement_score", Value: -1},
 			{Key: "created_at", Value: -1}, // tie-breaker
 		}}},
-		{{Key: "$skip", Value: pq.Offset}},
-		{{Key: "$limit", Value: pq.Limit}},
+		{{Key: "$limit", Value: cq.Limit}},
 	}
 
 	cursor, err := p.collection.Aggregate(ctx, pipeline)
@@ -154,8 +166,6 @@ func (p *PostStorage) GetTrending(ctx context.Context, user *User, pq Pagination
 	if err := cursor.All(ctx, &posts); err != nil {
 		return nil, fmt.Errorf("failed to decode posts: %w", err)
 	}
-
-	log.Println(posts)
 
 	var result []PostWithLikeStatus
 	if user == nil {
@@ -202,21 +212,33 @@ func (p *PostStorage) GetByID(ctx context.Context, postID string) (*Post, error)
 	return &post, nil
 }
 
-func (p *PostStorage) GetByUserID(ctx context.Context, userID primitive.ObjectID, pq PaginationQuery) ([]PostWithLikeStatus, error) {
+func (p *PostStorage) GetByUserID(ctx context.Context, userID primitive.ObjectID, cq CursorQuery) ([]PostWithLikeStatus, error) {
 	ctxTimeout, cancel := context.WithTimeout(ctx, QueryTimeout)
 	defer cancel()
 
 	sort := -1
-	if pq.Sort == "asc" {
+	if cq.Sort == "asc" {
 		sort = 1
 	}
 
 	filter := bson.M{"user_id": userID}
 
+	// cursor query based on post id
+	if cq.Cursor != "" && cq.Cursor != "undefined" {
+		cursorID, err := primitive.ObjectIDFromHex(cq.Cursor)
+		if err != nil {
+			return nil, fmt.Errorf("invalid cursor ID: %w", err)
+		}
+		if sort == -1 {
+			filter["_id"] = bson.M{"$lt": cursorID}
+		} else {
+			filter["_id"] = bson.M{"$gt": cursorID}
+		}
+	}
+
 	opts := options.Find().
 		SetSort(bson.M{"created_at": sort}).
-		SetSkip(int64(pq.Offset)).
-		SetLimit(int64(pq.Limit))
+		SetLimit(int64(cq.Limit))
 
 	cursor, err := p.collection.Find(ctx, filter, opts)
 	if err != nil {
@@ -255,6 +277,96 @@ func (p *PostStorage) GetCountByUserID(ctx context.Context, userID primitive.Obj
 	}
 
 	return int(count), nil
+}
+
+func (p *PostStorage) Search(ctx context.Context, user *User, query string, cq CursorQuery) ([]PostWithLikeStatus, error) {
+	log.Println(cq)
+
+	ctxTimeout, cancel := context.WithTimeout(ctx, QueryTimeout)
+	defer cancel()
+
+	regex := bson.M{"$regex": primitive.Regex{Pattern: query, Options: "i"}} // case-insensitive
+
+	filter := bson.M{}
+
+	orConditions := []bson.M{
+		{"title": regex},
+		{"content": regex},
+		{"tags": regex},
+	}
+
+	andConditions := []bson.M{
+		{"$or": orConditions},
+	}
+
+	sort := -1
+	if cq.Sort == "asc" {
+		sort = 1
+	}
+
+	if user != nil {
+		if cq.ShowFollowing && len(cq.FolloweeIDs) > 0 {
+			andConditions = append(andConditions, bson.M{"user_id": bson.M{"$in": cq.FolloweeIDs}})
+		}
+
+		if cq.ShowMentioned {
+			// Check if the array contains the username
+			andConditions = append(andConditions, bson.M{"mentions": user.Username}) // !!! Direct equality check
+		}
+
+		if len(cq.Roles) > 0 {
+			andConditions = append(andConditions, bson.M{"user_role": bson.M{"$in": cq.Roles}})
+		}
+	}
+
+	// cursor query based on post id
+	if cq.Cursor != "" && cq.Cursor != "undefined" {
+		cursorID, err := primitive.ObjectIDFromHex(cq.Cursor)
+		if err != nil {
+			return nil, fmt.Errorf("invalid cursor ID: %w", err)
+		}
+		if sort == -1 {
+			andConditions = append(andConditions, bson.M{"_id": bson.M{"$lt": cursorID}})
+		} else {
+			andConditions = append(andConditions, bson.M{"_id": bson.M{"$gt": cursorID}})
+		}
+	}
+
+	filter["$and"] = andConditions
+
+	opts := options.Find().
+		SetSort(bson.M{"_id": sort}).
+		SetLimit(int64(cq.Limit))
+
+	cursor, err := p.collection.Find(ctxTimeout, filter, opts)
+	if err != nil {
+		return nil, fmt.Errorf("failed to find posts: %w", err)
+	}
+	defer cursor.Close(ctx)
+
+	var posts []Post
+	if err := cursor.All(ctxTimeout, &posts); err != nil {
+		return nil, fmt.Errorf("failed to decode posts: %w", err)
+	}
+
+	var result []PostWithLikeStatus
+	for _, post := range posts {
+		liked := false
+		if user != nil {
+			for _, id := range post.LikeBy {
+				if user.ID == id {
+					liked = true
+					break
+				}
+			}
+		}
+		result = append(result, PostWithLikeStatus{
+			Post:        post,
+			LikedByUser: liked,
+		})
+	}
+
+	return result, nil
 }
 
 func (p *PostStorage) Update(ctx context.Context, post *Post) error {
