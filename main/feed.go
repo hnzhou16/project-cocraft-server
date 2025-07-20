@@ -7,8 +7,8 @@ import (
 )
 
 type feedResponse struct {
-	Posts      []storage.PostWithLikeStatus `json:"posts"`
-	NextCursor *string                      `json:"next_cursor"` // !!! pointer allows nil
+	PostsWithStatus []storage.PostWithLikeStatus `json:"posts_with_status"`
+	NextCursor      *string                      `json:"next_cursor"` // !!! pointer allows nil
 }
 
 func (app *application) getPublicFeedHandler(w http.ResponseWriter, r *http.Request) {
@@ -45,8 +45,8 @@ func (app *application) getPublicFeedHandler(w http.ResponseWriter, r *http.Requ
 
 	// do not allow infinite scroll for public feed
 	response := feedResponse{
-		Posts:      posts,
-		NextCursor: nil,
+		PostsWithStatus: posts,
+		NextCursor:      nil,
 	}
 
 	app.OutputJSON(w, http.StatusOK, response)
@@ -109,8 +109,8 @@ func (app *application) getFeedHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	response := feedResponse{
-		Posts:      posts,
-		NextCursor: nextCursor,
+		PostsWithStatus: posts,
+		NextCursor:      nextCursor,
 	}
 
 	app.OutputJSON(w, http.StatusOK, response)
@@ -158,8 +158,8 @@ func (app *application) getTrendingHandler(w http.ResponseWriter, r *http.Reques
 	}
 
 	response := feedResponse{
-		Posts:      posts,
-		NextCursor: nextCursor,
+		PostsWithStatus: posts,
+		NextCursor:      nextCursor,
 	}
 
 	app.OutputJSON(w, http.StatusOK, response)
@@ -210,8 +210,8 @@ func (app *application) getSearchHandler(w http.ResponseWriter, r *http.Request)
 	}
 
 	response := feedResponse{
-		Posts:      posts,
-		NextCursor: nextCursor,
+		PostsWithStatus: posts,
+		NextCursor:      nextCursor,
 	}
 
 	app.OutputJSON(w, http.StatusOK, response)

@@ -153,8 +153,8 @@ func (app *application) getAllUserPostsHandler(w http.ResponseWriter, r *http.Re
 	}
 
 	response := feedResponse{
-		Posts:      posts,
-		NextCursor: nextCursor,
+		PostsWithStatus: posts,
+		NextCursor:      nextCursor,
 	}
 
 	app.OutputJSON(w, http.StatusOK, response)
