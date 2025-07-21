@@ -207,7 +207,7 @@ func (app *application) mount() *chi.Mux {
 func (app *application) run(mux *chi.Mux) *http.Server {
 	// CORS configuration
 	corsMiddleware := cors.New(cors.Options{
-		AllowedOrigins:   []string{"http://localhost:3000", "http://cocraft.com", "https://www.cocraft.com"},
+		AllowedOrigins:   []string{"http://localhost:3000", "http://cocrafthome.com", "https://www.cocrafthome.com"},
 		AllowedMethods:   []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
 		AllowedHeaders:   []string{"Accept", "Content-Type", "Authorization"},
 		ExposedHeaders:   []string{"Content-Length", "Link"},
