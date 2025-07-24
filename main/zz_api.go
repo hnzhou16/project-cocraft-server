@@ -225,7 +225,7 @@ func (app *application) run(mux *chi.Mux) *http.Server {
 		WriteTimeout: 30 * time.Second,
 		ReadTimeout:  10 * time.Second,
 		IdleTimeout:  time.Minute,
-	}i
+	}
 
 	app.logger.Infow("server started", "addr", app.config.addr, "env", app.config.env)
 
