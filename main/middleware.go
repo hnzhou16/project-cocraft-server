@@ -27,7 +27,7 @@ func (app *application) authCtxMiddleware(next http.Handler) http.Handler {
 		// Get token from cookie
 		cookie, err := r.Cookie("token")
 		if err != nil {
-			app.unauthorizedError(w, r, fmt.Errorf("missing token cookie"))
+			app.unauthorizedError(w, r, fmt.Errorf("missing token cookie, cookie - %v, err - %v", cookie, err))
 			return
 		}
 		tokenString := cookie.Value

@@ -91,8 +91,7 @@ func (app *application) mount() *chi.Mux {
 	// timeout request context
 	r.Use(middleware.Timeout(60 * time.Second))
 
-	r.Get("/healt"+
-		"h", app.healthCheckHandler)
+	r.Get("/health", app.healthCheckHandler)
 
 	// authentication
 	r.Route("/authentication", func(r chi.Router) {
@@ -208,7 +207,7 @@ func (app *application) mount() *chi.Mux {
 func (app *application) run(mux *chi.Mux) *http.Server {
 	// CORS configuration
 	corsMiddleware := cors.New(cors.Options{
-		AllowedOrigins:   []string{"http://localhost:3000", "http://cocrafthome.com", "https://www.cocrafthome.com"},
+		AllowedOrigins:   []string{"http://localhost:3000", "https://cocrafthome.com", "https://www.cocrafthome.com"},
 		AllowedMethods:   []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
 		AllowedHeaders:   []string{"Accept", "Content-Type", "Authorization"},
 		ExposedHeaders:   []string{"Content-Length", "Link"},
@@ -226,7 +225,7 @@ func (app *application) run(mux *chi.Mux) *http.Server {
 		WriteTimeout: 30 * time.Second,
 		ReadTimeout:  10 * time.Second,
 		IdleTimeout:  time.Minute,
-	}
+	}i
 
 	app.logger.Infow("server started", "addr", app.config.addr, "env", app.config.env)
 
