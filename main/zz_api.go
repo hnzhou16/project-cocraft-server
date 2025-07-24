@@ -91,7 +91,8 @@ func (app *application) mount() *chi.Mux {
 	// timeout request context
 	r.Use(middleware.Timeout(60 * time.Second))
 
-	r.Get("/health", app.healthCheckHandler)
+	r.Get("/healt"+
+		"h", app.healthCheckHandler)
 
 	// authentication
 	r.Route("/authentication", func(r chi.Router) {
