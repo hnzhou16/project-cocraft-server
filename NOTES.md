@@ -1,3 +1,5 @@
+# air
+
 # init
 go mod init github.com/username/project
 go mod init <module-name>
