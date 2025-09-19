@@ -24,6 +24,7 @@ func (i *InviteStorage) CreateTTLIndex(ctx context.Context) {
 	ctxTimeout, cancel := context.WithTimeout(ctx, QueryTimeout)
 	defer cancel()
 
+	// documents will expire exactly at the time stored in expires_at
 	indexModel := mongo.IndexModel{
 		Keys:    bson.M{"expires_at": 1},
 		Options: options.Index().SetExpireAfterSeconds(0),

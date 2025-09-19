@@ -66,7 +66,6 @@ func (m *SendGridMailer) Send(templateFile, username, email string, data any) (i
 			time.Sleep(time.Second * time.Duration(i+1))
 			continue
 		}
-
 		return response.StatusCode, nil
 	}
 

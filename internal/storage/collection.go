@@ -93,7 +93,7 @@ func NewMongoDBCollections(dbConn *db.DBConnection) Collection {
 	inviteStorage := &InviteStorage{
 		collection: inviteCollection,
 	}
-	// initialize TTL index to clean up expired invite
+	// initialize TTL index only on invite collection to clean up expired invite
 	inviteStorage.CreateTTLIndex(context.Background())
 
 	reviewStorage := &ReviewStorage{
