@@ -4,8 +4,10 @@ import (
 	"context"
 	"fmt"
 	"github.com/hnzhou16/project-cocraft-server/internal/db"
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 	"time"
 )
 
@@ -124,4 +126,64 @@ func withTransaction(ctx context.Context, client *mongo.Client, txnFunc func(mon
 
 	_, err = session.WithTransaction(ctx, txnFunc)
 	return err
+}
+
+func EnsureIndexes(ctx context.Context, c Collection) error {
+	//User collection
+	_, err := c.User.(*UserStorage).collection.Indexes().CreateMany(ctx, []mongo.IndexModel{
+		{
+			Keys:    bson.D{{Key: "email", Value: 1}},
+			Options: options.Index().SetUnique(true),
+		},
+		{
+			Keys:    bson.D{{Key: "username", Value: 1}},
+			Options: options.Index().SetUnique(true),
+		},
+		{
+			Keys: bson.D{{Key: "role", Value: 1}}, // for filtering by role
+		},
+		{
+			Keys: bson.D{{Key: "created_at", Value: 1}}, // sorting/filtering by creation date
+		},
+	})
+	if err != nil {
+		return fmt.Errorf("failed to create user indexes: %w", err)
+	}
+
+	//Post collection
+	_, err = c.Post.(*PostStorage).collection.Indexes().CreateMany(ctx, []mongo.IndexModel{
+		{Keys: bson.D{{Key: "user_id", Value: 1}}},     // find posts by user
+		{Keys: bson.D{{Key: "user_role", Value: 1}}},   // filter by user role
+		{Keys: bson.D{{Key: "created_at", Value: -1}}}, // sorting feed
+	})
+	if err != nil {
+		return fmt.Errorf("failed to create post indexes: %w", err)
+	}
+
+	//Comment collection
+	_, err = c.Comment.(*CommentStorage).collection.Indexes().CreateOne(ctx, mongo.IndexModel{
+		Keys: bson.D{{Key: "post_id", Value: 1}}, // get comments by post
+	})
+	if err != nil {
+		return fmt.Errorf("failed to create comment indexes: %w", err)
+	}
+
+	//Review collection
+	_, err = c.Review.(*ReviewStorage).collection.Indexes().CreateOne(ctx, mongo.IndexModel{
+		Keys: bson.D{{Key: "rated_user_id", Value: 1}}, // get reviews for a user
+	})
+	if err != nil {
+		return fmt.Errorf("failed to create review indexes: %w", err)
+	}
+
+	//Follow collection
+	_, err = c.Follow.(*FollowStorage).collection.Indexes().CreateMany(ctx, []mongo.IndexModel{
+		{Keys: bson.D{{Key: "follower_id", Value: 1}}},  // get who a user follows
+		{Keys: bson.D{{Key: "following_id", Value: 1}}}, // get followers of a user
+	})
+	if err != nil {
+		return fmt.Errorf("failed to create follow indexes: %w", err)
+	}
+
+	return nil
 }

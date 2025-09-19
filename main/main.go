@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"github.com/hnzhou16/project-cocraft-server/internal/ai"
 	"go.uber.org/zap"
 	"log"
 	"os"
@@ -10,6 +9,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/hnzhou16/project-cocraft-server/internal/ai"
 	"github.com/hnzhou16/project-cocraft-server/internal/auth"
 	"github.com/hnzhou16/project-cocraft-server/internal/aws"
 	"github.com/hnzhou16/project-cocraft-server/internal/db"
@@ -39,8 +39,9 @@ func main() {
 			maxConnTimeOut:  time.Duration(env.GetInt("DB_CONN_TIME_OUT", 10)) * time.Second,
 		},
 		mailConfig: mailConfig{
-			apiKey:        env.GetString("SENDGRID_API_KEY", ""),
-			fromEmail:     env.GetString("FROM_EMAIL", ""),
+			apiKey:    env.GetString("SENDGRID_API_KEY", ""),
+			fromEmail: env.GetString("FROM_EMAIL", ""),
+			//TODO: only add activationURL in env file when deploy
 			activationURL: env.GetString("ACTIVATION_URL", "http://localhost:3000/activate"),
 			exp:           time.Hour * 24 * 3,
 		},
@@ -85,6 +86,13 @@ func main() {
 
 	// Initialize MongoDB collections
 	s := storage.NewMongoDBCollections(dbConn)
+
+	// Create MongoDB indexes
+	ctx := context.Background()
+	if err := storage.EnsureIndexes(ctx, s); err != nil {
+		logger.Fatal("❌ Failed to create indexes: %v", err)
+	}
+	logger.Info("✅ Indexes ensured for all collections")
 
 	// Initialize Mailer
 	mailerSendgrid := mailer.NewSendgrid(cfg.mailConfig.apiKey, cfg.mailConfig.fromEmail)
