@@ -31,13 +31,12 @@ CoCraft Server is the backend API that powers the CoCraft social platform, provi
 - **Post Creation**: Create posts with text content, tags, and user mentions
 - **Post Management**: Full CRUD operations for posts with ownership validation
 - **Post Interactions**: Like/unlike functionality with real-time like counts
-- **Post Discovery**: Get posts by user, search functionality, and trending algorithms
+- **Post Discovery**: Get posts by user, andd search functionality
 
 ### Feed & Discovery
 
 - **Personalized Feed**: Algorithm-driven feed based on user follows and interactions
 - **Public Feed**: Limited public access for non-authenticated users
-- **Trending Posts**: Algorithm to surface popular and engaging content
 - **Search Functionality**: Full-text search across posts with filtering capabilities
 - **Pagination**: Cursor-based pagination for efficient data loading
 
@@ -56,8 +55,7 @@ CoCraft Server is the backend API that powers the CoCraft social platform, provi
 ### AI Integration
 
 - **Image Generation**: OpenAI DALL-E integration for AI-powered image creation
-- **Image Refinement**: Iterative image improvement with prompt refinement
-- **Custom Prompts**: Support for detailed design prompts and specifications
+- **History Retrieval**: Support for retrieving image history
 
 ### Cloud Storage
 
@@ -68,7 +66,7 @@ CoCraft Server is the backend API that powers the CoCraft social platform, provi
 ### Email Services
 
 - **SendGrid Integration**: Professional email delivery for account activation
-- **Template System**: Structured email templates for different notification types
+- **Template System**: Structured email templates
 - **Activation Emails**: Automated account activation email workflow
 
 ### API Architecture
@@ -230,5 +228,4 @@ project-cocraft-server/
 - **Connection Pooling**: Efficient database connection management
 - **Cursor Pagination**: Memory-efficient data pagination
 - **Indexing**: Optimized database queries with proper indexes
-- **Caching**: Strategic caching for frequently accessed data
 - **Graceful Shutdown**: Proper resource cleanup on shutdown
